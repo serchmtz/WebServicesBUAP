@@ -15,7 +15,7 @@ namespace TestWebServicesBUAP
 
         [TestCase(500)]
         [TestCase(301)]
-        [TestCase(23123123123)]
+        [TestCase(-1)]
         public void TestGetResponse(int code)
         {
             Respuesta res = usrSrv.GetResponse(code);
@@ -24,11 +24,16 @@ namespace TestWebServicesBUAP
             Assert.IsNotEmpty(res.Message);
         }
 
-        [TestCase("pruebas2", "12345678b")]
-        public void TestAuthenticate(string user, string pass)
+        [TestCase("pruebas2", "12345678b", ExpectedResult = 99)]
+        [TestCase("pruebas2", null, ExpectedResult = 501)]
+        [TestCase("as32112", null, ExpectedResult = 500)]
+        [TestCase(null, null, ExpectedResult = 500)]
+        [TestCase("", null, ExpectedResult = 500)]
+        public int TestAuthenticate(string user, string pass)
         {
             Respuesta res = usrSrv.Authenticate(user, pass);
             Assert.NotNull(res);
+            return res.Code;
         }
     }
 }

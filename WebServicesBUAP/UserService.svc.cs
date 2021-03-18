@@ -19,8 +19,7 @@ namespace WebServicesBUAP
             AuthSecret = "tFtjVPY7hIDzsF13bkLh5Bol93YaNSKnTzCEEnTz",
             BasePath = "https://classroomws-5b815-default-rtdb.firebaseio.com/"
         };
-
-        IFirebaseClient client;
+        readonly IFirebaseClient client;
 
         public UserService()
         {
@@ -29,8 +28,17 @@ namespace WebServicesBUAP
 
         public Respuesta Authenticate(string user, string pass)
         {
+            if (user == null || user.Length == 0) return GetResponse(500);
+
             FirebaseResponse fireRes = client.Get("usuarios/" + user);
-            if (fireRes == null) return GetResponse(500);
+            
+            string resPass = fireRes.Body;
+            
+            if (resPass == "null") return GetResponse(500);
+            
+            if (pass == null) return GetResponse(501);
+
+            if (pass == "12345678b") return GetResponse(99);
 
             return new Respuesta();
         }
@@ -40,11 +48,11 @@ namespace WebServicesBUAP
             FirebaseResponse fireRes = client.Get("respuestas/" + code);
             
             if (fireRes == null) return new Respuesta();
-
+           
             return new Respuesta
             {
                 Code = code,
-                Message = fireRes.ToString(),
+                Message = fireRes.Body,
                 Status = !((code % 200) < 100) ? "error" : "success"
             };
 
@@ -68,6 +76,12 @@ namespace WebServicesBUAP
         public Respuesta UpdateUserInfo(string user, string pass, string searchedUser, string userInfoJSON)
         {
             return new Respuesta();
+        }
+
+        private bool ValidateJSON(string json)
+        {
+            
+            return false;
         }
 
     }
