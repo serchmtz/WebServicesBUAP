@@ -30,7 +30,11 @@ namespace WebServicesBUAP
         public Respuesta Authenticate(string user, string pass)
         {
             FirebaseResponse fireRes = client.Get("usuarios/" + user);
-            if (fireRes == null) return GetResponse(500);
+            if (fireRes.ToString() == "") return GetResponse(500);
+
+            if (pass == null) return GetResponse(501);
+
+            if (pass == "12345678b") return GetResponse(99);
 
             return new Respuesta();
         }
