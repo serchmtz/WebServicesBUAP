@@ -8,6 +8,7 @@ using System.Text;
 using FireSharp.Config;
 using FireSharp.Interfaces;
 using FireSharp.Response;
+using System.Security.Cryptography;
 
 namespace WebServicesBUAP
 {
@@ -28,17 +29,18 @@ namespace WebServicesBUAP
 
         public Respuesta Authenticate(string user, string pass)
         {
+
             if (user == null || user.Length == 0) return GetResponse(500);
 
             FirebaseResponse fireRes = client.Get("usuarios/" + user);
-            
-            string resPass = fireRes.Body;
+
+            string resPass = fireRes.Body.Trim('"');
             
             if (resPass == "null") return GetResponse(500);
             
             if (pass == null) return GetResponse(501);
-
-            if (pass == "12345678b") return GetResponse(99);
+        
+            if (MD5Hash(pass) == resPass) return GetResponse(99);
 
             return new Respuesta();
         }
@@ -52,7 +54,7 @@ namespace WebServicesBUAP
             return new Respuesta
             {
                 Code = code,
-                Message = fireRes.Body,
+                Message = fireRes.Body.Trim('"'),
                 Status = !((code % 200) < 100) ? "error" : "success"
             };
 
@@ -82,6 +84,24 @@ namespace WebServicesBUAP
         {
             
             return false;
+        }
+
+        private string MD5Hash(string text)
+        {
+            if (text == null) return text;
+
+            MD5 md5 = new MD5CryptoServiceProvider();
+            md5.ComputeHash(UTF8Encoding.UTF8.GetBytes(text));
+
+            byte[] res = md5.Hash;
+            StringBuilder strb = new StringBuilder();
+            foreach (byte ch in res)
+            {
+                strb.Append(ch.ToString("x2"));
+            }
+
+            return strb.ToString();
+           
         }
 
     }
