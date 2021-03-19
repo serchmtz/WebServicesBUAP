@@ -11,7 +11,7 @@ namespace WebServicesBUAP
             Code = 999;
             Message = "Error desconocido";
             Status = "error";
-            Data = DateTime.Now.ToString("s");
+            Data = "";
         }
 
         [DataMember(Name = "code")]

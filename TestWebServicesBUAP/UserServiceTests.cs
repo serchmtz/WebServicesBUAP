@@ -7,10 +7,17 @@ namespace TestWebServicesBUAP
     public class UserServiceTests
     {
         private IUserService usrSrv;
+        private string userInfoJSON;
         [OneTimeSetUp]
         public void Init()
         {
             usrSrv = new UserService();
+            userInfoJSON = @"{
+                                'correo': 'mi.correo@mail.net',
+                                'nombre': 'Jorge Luis Borges',
+                                'rol': 'rh',
+                                'telefono': '222-7-18-62-98'
+                              }";
         }
 
         [TestCase(500)]
@@ -33,6 +40,13 @@ namespace TestWebServicesBUAP
         {
             Respuesta res = usrSrv.Authenticate(user, pass);
             Assert.NotNull(res);
+            return res.Code;
+        }
+
+        [TestCase("pruebas2", "12345678b", "pruebas2", ExpectedResult = 402)]
+        public int TestSetUserInfo(string user, string pass, string searchedUser)
+        {
+            Respuesta res = usrSrv.SetUserInfo(user, pass, searchedUser, userInfoJSON);
             return res.Code;
         }
     }

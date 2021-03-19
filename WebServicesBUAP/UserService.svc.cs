@@ -9,13 +9,16 @@ using FireSharp.Config;
 using FireSharp.Interfaces;
 using FireSharp.Response;
 using System.Security.Cryptography;
+using Newtonsoft.Json.Schema;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
 
 namespace WebServicesBUAP
 {
 
     public class UserService : IUserService
     {
-        IFirebaseConfig config = new FirebaseConfig
+        readonly IFirebaseConfig config = new FirebaseConfig
         {
             AuthSecret = "tFtjVPY7hIDzsF13bkLh5Bol93YaNSKnTzCEEnTz",
             BasePath = "https://classroomws-5b815-default-rtdb.firebaseio.com/"
@@ -50,12 +53,13 @@ namespace WebServicesBUAP
             FirebaseResponse fireRes = client.Get("respuestas/" + code);
             
             if (fireRes == null) return new Respuesta();
-           
+
             return new Respuesta
             {
                 Code = code,
                 Message = fireRes.Body.Trim('"'),
-                Status = !((code % 200) < 100) ? "error" : "success"
+                Status = !((code % 200) < 100) ? "error" : "success",
+                Data = DateTime.Now.ToString("s")
             };
 
         }
@@ -67,9 +71,29 @@ namespace WebServicesBUAP
 
         public Respuesta SetUserInfo(string user, string pass, string searchedUser, string userInfoJSON)
         {
-            return new Respuesta();
+            Respuesta res = Authenticate(user, pass);
+            
+            if (res.Status == "error") return res;                        
+            if (!ValidateJSON(userInfoJSON)) return GetResponse(305);
+            if (UserInfoExists(searchedUser)) return GetResponse(506);
+
+            UserInfo userInfo = JsonConvert.DeserializeObject<UserInfo>(userInfoJSON);
+
+            FirebaseResponse fireRes = client.Set<UserInfo>("usuarios_info/" + searchedUser, userInfo);
+
+            if(fireRes != null)
+            {
+                res = GetResponse(402);               
+            }
+
+            return res;
         }
 
+        private bool UserInfoExists(string user)
+        {
+            FirebaseResponse fireRes = client.Get("usuarios_info/" + user);
+            return !(fireRes == null || fireRes.Body.Trim('"') == "null");
+        }
         public Respuesta UpdateUser(string user, string pass, string oldUser, string newUser)
         {
             return new Respuesta();
@@ -80,10 +104,22 @@ namespace WebServicesBUAP
             return new Respuesta();
         }
 
-        private bool ValidateJSON(string json)
+        private bool ValidateJSON(string userInfoJSON)
         {
-            
-            return false;
+            string schemaJson = @"{
+                'decription': 'User Info',
+                'type': 'object',
+                'properties': 
+                    {
+                        'correo': { 'type': 'string' },
+                        'nombre': { 'type': 'string' },
+                        'rol': { 'type': 'string' },
+                        'telefono': { 'type': 'string' },
+                    }
+                }";
+            JSchema schema = JSchema.Parse(schemaJson);
+            JObject userInfo = JObject.Parse(userInfoJSON);
+            return userInfo.IsValid(schema);
         }
 
         private string MD5Hash(string text)
