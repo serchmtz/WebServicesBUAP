@@ -25,6 +25,8 @@ namespace WebServicesBUAP
         };
         readonly IFirebaseClient client;
 
+        readonly string[] allowedRoles = { "rh" };
+
         public UserService()
         {
             client = new FireSharp.FirebaseClient(config);
@@ -41,11 +43,14 @@ namespace WebServicesBUAP
             
             if (resPass == "null") return GetResponse(500);
             
-            if (pass == null) return GetResponse(501);
+            if (pass == null || MD5Hash(pass) != resPass) return GetResponse(501);
         
-            if (MD5Hash(pass) == resPass) return GetResponse(99);
 
-            return new Respuesta();
+            UserInfo userInfo = GetUserInfo(user);
+            bool cont = allowedRoles.Contains(userInfo.Rol);
+            if (!cont) return GetResponse(504);
+
+            return GetResponse(99);
         }
 
         public Respuesta GetResponse(int code)
@@ -89,11 +94,6 @@ namespace WebServicesBUAP
             return res;
         }
 
-        private bool UserInfoExists(string user)
-        {
-            FirebaseResponse fireRes = client.Get("usuarios_info/" + user);
-            return !(fireRes == null || fireRes.Body.Trim('"') == "null");
-        }
         public Respuesta UpdateUser(string user, string pass, string oldUser, string newUser)
         {
             return new Respuesta();
@@ -102,6 +102,19 @@ namespace WebServicesBUAP
         public Respuesta UpdateUserInfo(string user, string pass, string searchedUser, string userInfoJSON)
         {
             return new Respuesta();
+        }
+
+        private bool UserInfoExists(string user)
+        {
+            FirebaseResponse fireRes = client.Get("usuarios_info/" + user);
+            return !(fireRes == null || fireRes.Body.Trim('"') == "null");
+        }
+
+        private UserInfo GetUserInfo(string user)
+        {
+            FirebaseResponse fireRes = client.Get("usuarios_info/" + user);
+            UserInfo userInfo = fireRes.ResultAs<UserInfo>();
+            return userInfo;
         }
 
         private bool ValidateJSON(string userInfoJSON)
@@ -127,7 +140,7 @@ namespace WebServicesBUAP
             if (text == null) return text;
 
             MD5 md5 = new MD5CryptoServiceProvider();
-            md5.ComputeHash(UTF8Encoding.UTF8.GetBytes(text));
+            md5.ComputeHash(Encoding.UTF8.GetBytes(text));
 
             byte[] res = md5.Hash;
             StringBuilder strb = new StringBuilder();
