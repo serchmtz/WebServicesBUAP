@@ -9,10 +9,14 @@ using System.Security.Cryptography;
 using Newtonsoft.Json.Schema;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
+using System.ServiceModel;
 
 namespace WebServicesBUAP
 {
-
+    [ServiceBehavior(
+        Namespace  = "http://WebServicesBUAP",
+        Name = "UserService"
+        )]
     public class UserService : IUserService
     {
         readonly IFirebaseConfig config = new FirebaseConfig

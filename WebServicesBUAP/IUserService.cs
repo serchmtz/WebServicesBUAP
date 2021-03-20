@@ -4,7 +4,10 @@ namespace WebServicesBUAP
 {
 
 
-    [ServiceContract]
+    [ServiceContract(
+        Name = "UserService",
+        Namespace = "http://WebServicesBUAP"
+        )]
     public interface IUserService
     {
         Respuesta Authenticate(string user, string pass);

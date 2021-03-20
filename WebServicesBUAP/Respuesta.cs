@@ -3,7 +3,10 @@ using System.Runtime.Serialization;
 
 namespace WebServicesBUAP
 {
-    [DataContract]
+    [DataContract(
+        Name = "Respuesta",
+        Namespace = "http://WebServicesBUAP"
+    )]
     public class Respuesta
     {
         public Respuesta()
