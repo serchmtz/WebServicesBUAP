@@ -13,7 +13,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\WebServicesBUAP\WebServicesBUAP.csproj" />
+    <ProjectReference Include="..\WebServicesBUAP\WebServicesBUAP.csproj">
+      <Private>False</Private>
+    </ProjectReference>
   </ItemGroup>
 
 </Project>

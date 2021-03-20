@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.Serialization;
-using System.ServiceModel;
-using System.ServiceModel.Web;
+using System.Text.RegularExpressions;
 using System.Text;
 using FireSharp.Config;
 using FireSharp.Interfaces;
@@ -48,7 +45,7 @@ namespace WebServicesBUAP
         public Respuesta Authenticate(string user, string pass)
         {
 
-            if (user == null || user.Length == 0) return GetResponse(500);
+            if (string.IsNullOrEmpty(user)) return GetResponse(500);
 
             FirebaseResponse fireRes = client.Get("usuarios/" + user);
 
@@ -86,15 +83,71 @@ namespace WebServicesBUAP
             {
                 Code = code,
                 Message = fireRes.Body.Trim('"'),
-                Status = !((code % 200) < 100) ? "error" : "success",
-                Data = DateTime.Now.ToString("s")
             };
 
         }
 
-        public Respuesta SetUser(string user, string pass, string newuser, string newpass)
+        /// <summary>
+        /// Insertar nombre y contraseña de una cuenta.
+        /// </summary>
+        /// <returns>
+        /// <seealso cref="WebServicesBUAP.Respuesta"/>
+        /// La respuesta de la operación.
+        /// </returns>
+        /// <param name="user">Nombre de usuario de autenticación.</param>
+        /// <param name="pass">La contraseña de autenticación.</param>
+        /// <param name="newUser">El nombre de usuario de la cuenta nueva.</param>
+        /// <param name="newPass">La contraseña de la cuenta nueva</param>
+        public Respuesta SetUser(string user, string pass, string newUser, string newPass)
         {
-            return new Respuesta();
+            Respuesta res = Authenticate(user, pass);
+            if (res.Status == "error") return res;
+
+            if (!Regex.Match(newUser, "^[a-zA-Z0-9]+$").Success) return GetResponse(503);
+
+            if (!Regex.Match(newPass, "^(?=.*\\d+).{8,}$").Success) return GetResponse(502);
+
+            if (UserExists(newUser)) return GetResponse(508);
+
+            FirebaseResponse fireRes = client.Set("usuarios/" + newUser, MD5Hash(newPass));
+
+            if (fireRes != null) res = GetResponse(404);
+
+            return res;
+        }
+
+        /// <summary>
+        /// Actualizar nombre de usuario y contraseña de una cuenta.
+        /// </summary>
+        /// <returns>
+        /// <seealso cref="WebServicesBUAP.Respuesta"/>
+        /// La respuesta de la operación.
+        /// </returns>
+        /// <param name="user">Nombre de usuario de autenticación.</param>
+        /// <param name="pass">La contraseña de autenticación.</param>
+        /// <param name="oldUser">El nombre de usuario actual de la cuenta a modificar.</param>
+        /// <param name="newUser">El nuevo nombre de usuario de la cuenta a modificar.</param>
+        /// <param name="newPass">La nueva contraseña de la cuenta a modificar.</param>
+        public Respuesta UpdateUser(string user, string pass, string oldUser, string newUser, string newPass)
+        {
+            Respuesta res = Authenticate(user, pass);
+            if (res.Status == "error") return res;
+
+            if (!Regex.Match(newUser, "^[a-zA-Z0-9]+$").Success) return GetResponse(503);
+
+            if (!Regex.Match(newPass, "^(?=.*\\d+).{8,}$").Success) return GetResponse(502);
+
+            if (!UserExists(oldUser)) return GetResponse(505);
+
+            if(oldUser != newUser)
+            {
+                client.Delete("usuarios/" + oldUser);
+            }
+            FirebaseResponse fireRes = client.Update("usuarios/" + newUser, MD5Hash(newPass));
+
+            if (fireRes != null) res = GetResponse(404);
+
+            return res;
         }
 
         /// <summary>
@@ -126,12 +179,10 @@ namespace WebServicesBUAP
             if (res.Status == "error") return res;
             try
             {
-                bool isValid = ValidateJSON(userInfoJSON);
-                if (!isValid) return GetResponse(304);
+                if (!ValidateJSON(userInfoJSON)) return GetResponse(304);
             }
             catch (JsonReaderException)
             {
-
                 return GetResponse(305);
             }
            
@@ -139,18 +190,10 @@ namespace WebServicesBUAP
 
             UserInfo userInfo = JsonConvert.DeserializeObject<UserInfo>(userInfoJSON);
 
-            FirebaseResponse fireRes = client.Set<UserInfo>("usuarios_info/" + searchedUser, userInfo);
+            FirebaseResponse fireRes = client.Set("usuarios_info/" + searchedUser, userInfo);
 
-            if(fireRes != null)
-            {
-                res = GetResponse(402);               
-            }
+            if (fireRes != null) return GetResponse(402);
 
-            return res;
-        }
-
-        public Respuesta UpdateUser(string user, string pass, string oldUser, string newUser)
-        {
             return new Respuesta();
         }
 
@@ -183,27 +226,22 @@ namespace WebServicesBUAP
             if (res.Status == "error") return res;
             try
             {
-                bool isValid = ValidateJSON(userInfoJSON);
-                if (!isValid) return GetResponse(304);
+                if (!ValidateJSON(userInfoJSON)) return GetResponse(304);
             }
             catch (JsonReaderException)
             {
-
                 return GetResponse(305);
             }
 
             if (!UserInfoExists(searchedUser)) return GetResponse(507);
-
+           
             UserInfo userInfo = JsonConvert.DeserializeObject<UserInfo>(userInfoJSON);
 
-            FirebaseResponse fireRes = client.Update<UserInfo>("usuarios_info/" + searchedUser, userInfo);
+            FirebaseResponse fireRes = client.Update("usuarios_info/" + searchedUser, userInfo);
 
-            if (fireRes != null)
-            {
-                res = GetResponse(403);
-            }
+            if (fireRes != null) return GetResponse(403);
 
-            return res;
+            return new Respuesta();
         }
 
         /// <summary>
@@ -219,6 +257,22 @@ namespace WebServicesBUAP
         private bool UserInfoExists(string user)
         {
             FirebaseResponse fireRes = client.Get("usuarios_info/" + user);
+            return !(fireRes == null || fireRes.Body.Trim('"') == "null");
+        }
+
+        /// <summary>
+        /// Verifica si ya existe un usuario en la base de datos.
+        /// </summary>
+        /// <param name="user">
+        /// El identificador del usuario (nombre de usuario)
+        /// </param>
+        /// <returns>
+        /// <seealso cref="System.Boolean"/>
+        /// Verdadero si existe de lo contrario falso.
+        /// </returns>
+        private bool UserExists(string user)
+        {
+            FirebaseResponse fireRes = client.Get("usuarios/" + user);
             return !(fireRes == null || fireRes.Body.Trim('"') == "null");
         }
 
@@ -253,7 +307,7 @@ namespace WebServicesBUAP
         /// </exception>
         private bool ValidateJSON(string userInfoJSON)
         {
-            string schemaJson = @"{
+            string jsonSchema = @"{
                 'decription': 'User Info',
                 'type': 'object',
                 'properties': 
@@ -265,11 +319,19 @@ namespace WebServicesBUAP
                     },
                 'required': ['correo', 'nombre', 'rol', 'telefono']
                 }";
-            JSchema schema = JSchema.Parse(schemaJson);
+            JSchema schema = JSchema.Parse(jsonSchema);
             JObject userInfo = JObject.Parse(userInfoJSON);
             return userInfo.IsValid(schema);
         }
 
+        /// <summary>
+        /// Calcula el hash MD5 de una cadena de texto.
+        /// </summary>
+        /// <returns>
+        /// <seealso cref="System.String"/>
+        /// El hash MD5 como una cadena de texto.
+        /// </returns>
+        /// <param name="text">La cadena de texto de entrada.</param>
         private string MD5Hash(string text)
         {
             if (text == null) return text;

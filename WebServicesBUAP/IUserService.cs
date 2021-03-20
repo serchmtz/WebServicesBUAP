@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.ServiceModel;
-using System.ServiceModel.Web;
-using System.Text;
+﻿using System.ServiceModel;
 
 namespace WebServicesBUAP
 {
@@ -19,7 +14,7 @@ namespace WebServicesBUAP
         Respuesta SetUser(string user, string pass, string newuser, string newpass);
 
         [OperationContract(Name = "updateUser")]
-        Respuesta UpdateUser(string user, string pass, string oldUser, string newUser);
+        Respuesta UpdateUser(string user, string pass, string oldUser, string newUser, string newPass);
 
 
         [OperationContract(Name = "setUserInfo")]
