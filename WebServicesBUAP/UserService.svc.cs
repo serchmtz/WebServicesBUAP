@@ -10,6 +10,8 @@ using Newtonsoft.Json.Schema;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 using System.ServiceModel;
+using System.Net.Http;
+
 
 namespace WebServicesBUAP
 {
@@ -231,13 +233,32 @@ namespace WebServicesBUAP
 
             if (!UserInfoExists(searchedUser)) return GetResponse(507);
 
-  
-            UserInfo userInfo = JsonConvert.DeserializeObject<UserInfo>(userInfoJSON);
-            Console.WriteLine(userInfoJSON);
-            Console.WriteLine(userInfo);
-            FirebaseResponse fireRes = client.Update("usuarios_info/" + searchedUser, userInfo);
 
-            if (fireRes != null) return GetResponse(403);
+            UserInfo userInfo = JsonConvert.DeserializeObject<UserInfo>(userInfoJSON);
+            userInfoJSON = JsonConvert.SerializeObject(userInfo);
+
+
+            Console.WriteLine(userInfoJSON);
+            //Console.WriteLine(userInfo);
+            //FirebaseResponse fireRes = client.UpdateAsync("usuarios_info/" + searchedUser, userInfo).Result;
+
+
+            //if (fireRes != null) return GetResponse(403);
+            using (var httpClient = new HttpClient())
+            {
+                string url = "https://classroomws-5b815-default-rtdb.firebaseio.com/"
+                    + "usuarios_info/" + searchedUser + ".json";
+                HttpMethod httpMethod = new HttpMethod("PATCH");
+
+                HttpRequestMessage req = new HttpRequestMessage(httpMethod, url)
+                {
+                    Content = new StringContent(userInfoJSON, Encoding.UTF8, "application/json")
+                };
+                var result = httpClient.SendAsync(req).Result;
+                Console.WriteLine(result.IsSuccessStatusCode);
+                Console.WriteLine(result.StatusCode);
+                return GetResponse(403);
+            }
 
             return new Respuesta();
         }
