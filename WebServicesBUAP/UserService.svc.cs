@@ -49,12 +49,12 @@ namespace WebServicesBUAP
         public Respuesta Authenticate(string user, string pass)
         {
 
-            if (string.IsNullOrEmpty(user)) return GetResponse(500);
+            if (string.IsNullOrEmpty(user) || user == "?") return GetResponse(500);
 
             FirebaseResponse fireRes = client.Get("usuarios/" + user);
 
             string resPass = fireRes.Body.Trim('"');
-            
+        
             if (resPass == "null") return GetResponse(500);
             
             if (pass == null || MD5Hash(pass) != resPass) return GetResponse(501);
@@ -147,7 +147,8 @@ namespace WebServicesBUAP
             {
                 client.Delete("usuarios/" + oldUser);
             }
-            FirebaseResponse fireRes = client.Update("usuarios/" + newUser, MD5Hash(newPass));
+
+            FirebaseResponse fireRes = client.Set("usuarios/" + newUser, MD5Hash(newPass));
 
             if (fireRes != null) res = GetResponse(404);
 
@@ -181,16 +182,12 @@ namespace WebServicesBUAP
             Respuesta res = Authenticate(user, pass);
             
             if (res.Status == "error") return res;
-            try
-            {
-                if (!ValidateJSON(userInfoJSON)) return GetResponse(304);
-            }
-            catch (JsonReaderException)
-            {
-                return GetResponse(305);
-            }
-           
+            var (isValid, code) = ValidateJSON(userInfoJSON);
+            if (!isValid) return GetResponse(code);
             if (UserInfoExists(searchedUser)) return GetResponse(506);
+
+
+
 
             UserInfo userInfo = JsonConvert.DeserializeObject<UserInfo>(userInfoJSON);
 
@@ -228,19 +225,16 @@ namespace WebServicesBUAP
             Respuesta res = Authenticate(user, pass);
 
             if (res.Status == "error") return res;
-            try
-            {
-                if (!ValidateJSON(userInfoJSON)) return GetResponse(304);
-            }
-            catch (JsonReaderException)
-            {
-                return GetResponse(305);
-            }
+
+            var (isValid, code) = ValidateJSON(userInfoJSON, true);
+            if (!isValid) return GetResponse(code);
 
             if (!UserInfoExists(searchedUser)) return GetResponse(507);
-           
-            UserInfo userInfo = JsonConvert.DeserializeObject<UserInfo>(userInfoJSON);
 
+  
+            UserInfo userInfo = JsonConvert.DeserializeObject<UserInfo>(userInfoJSON);
+            Console.WriteLine(userInfoJSON);
+            Console.WriteLine(userInfo);
             FirebaseResponse fireRes = client.Update("usuarios_info/" + searchedUser, userInfo);
 
             if (fireRes != null) return GetResponse(403);
@@ -304,28 +298,73 @@ namespace WebServicesBUAP
         /// El JSON que representa la información del usuario.
         /// </param>
         /// <returns>
-        /// <seealso cref="System.Boolean"/>
-        /// Verdadero si userInfoJSON es válido o falso si no lo es.
+        /// Una tupla conteniendo la siguiente información:
+        /// <list type="bullet">
+        /// <item>
+        /// <seealso cref="bool"/> 
+        /// isValid, verdadero si el JSON es válido, falso de otra manera.
+        /// </item>
+        /// <item>
+        /// <seealso cref="int"/>
+        /// code, código de error o 0 si el JSON es válido.
+        /// </item>
+        /// </list>
         /// </returns>
-        /// <exception cref="Newtonsoft.Json.JsonReaderException">
-        /// </exception>
-        private bool ValidateJSON(string userInfoJSON)
+        public (bool isValid, int code) ValidateJSON(string userInfoJSON, bool partial = false)
         {
+            int invalidCode;
             string jsonSchema = @"{
                 'decription': 'User Info',
                 'type': 'object',
+                'additionalProperties': false,
                 'properties': 
                     {
-                        'correo': { 'type': 'string', 'minLength': 1 },
-                        'nombre': { 'type': 'string', 'minLength': 1 },
-                        'rol': { 'type': 'string', 'minLength': 1 },
-                        'telefono': { 'type': 'string', 'minLength': 1 },
-                    },
+                        'correo': { 
+                            'type': 'string', 
+                            'format': 'email'
+                        },
+                        'nombre': { 
+                            'type': 'string',
+                            'minLength': 1
+                        },
+                        'rol': {
+                            'type': 'string',
+                            'minLength': 1
+                        },
+                        'telefono': {
+                            'type': 'string',
+                            'minLength': 1
+                         },
+                    }";
+            if(!partial)
+            {
+                jsonSchema += @",
                 'required': ['correo', 'nombre', 'rol', 'telefono']
                 }";
+                invalidCode = 304;
+            }
+            else
+            {
+                jsonSchema += @"
+                }";
+                invalidCode = 306;
+        
+            }
+                 
             JSchema schema = JSchema.Parse(jsonSchema);
-            JObject userInfo = JObject.Parse(userInfoJSON);
-            return userInfo.IsValid(schema);
+            try
+            {
+                JObject userInfo = JObject.Parse(userInfoJSON);
+                bool isValid = userInfo.IsValid(schema);
+                int code = isValid ? 0 : invalidCode;
+                return (isValid, code);
+            }
+            catch (JsonReaderException)
+            {
+                return (false, 305);
+            }
+
+
         }
 
         /// <summary>
