@@ -394,5 +394,10 @@ namespace WebServicesBUAP
            
         }
 
+        public void DelteNode(string path)
+        {
+            client.Delete(path);
+        }
+
     }
 }

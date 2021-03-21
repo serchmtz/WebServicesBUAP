@@ -99,28 +99,6 @@ namespace TestWebServicesBUAP
         }
 
 
-        [TestCase("pruebas1", "12345678a", "pruebas2", JSONType.Valid, ExpectedResult = 504)]
-        [TestCase("pruebas2", "12345678b", "pruebas2", JSONType.Valid, ExpectedResult = 506)]
-        [TestCase("pruebas2", "12345678b", "pruebas1", JSONType.Valid, ExpectedResult = 402)]
-        [TestCase("pruebas2", "12345678b", "pruebas1", JSONType.Invalid, ExpectedResult = 304)]
-        [TestCase("pruebas2", "12345678b", "pruebas1", JSONType.Malformed, ExpectedResult = 305)]
-        public int TestSetUserInfo(string user, string pass, string searchedUser, JSONType type)
-        {
-            Respuesta res = usrSrv.SetUserInfo(user, pass, searchedUser, getTestJSON(type));
-            return res.Code;
-        }
-
-        [TestCase("pruebas1", "12345678a", "pruebas2", JSONType.PartialValid, ExpectedResult = 504)]
-        [TestCase("pruebas2", "12345678b", "pruebas2asdasd", JSONType.PartialValid, ExpectedResult = 507)]
-        [TestCase("pruebas2", "12345678b", "pruebas1", JSONType.PartialValid, ExpectedResult = 403)]
-        [TestCase("pruebas2", "12345678b", "pruebas1", JSONType.PartialInvalid, ExpectedResult = 306)]
-        [TestCase("pruebas2", "12345678b", "pruebas1", JSONType.PartialMalformed, ExpectedResult = 305)]
-        public int TestUpdateUserInfo(string user, string pass, string searchedUser, JSONType type)
-        {
-            Respuesta res = usrSrv.UpdateUserInfo(user, pass, searchedUser, getTestJSON(type));
-            return res.Code;
-        }
-
         [TestCase(JSONType.Valid, false, ExpectedResult = 0)]
         [TestCase(JSONType.Invalid, false, ExpectedResult = 304)]
         [TestCase(JSONType.Malformed, false, ExpectedResult = 305)]
@@ -153,11 +131,42 @@ namespace TestWebServicesBUAP
         [TestCase("pruebas2", "12345678b", "pruebas1", "pruebas1", "128a", ExpectedResult = 502)]
         [TestCase("pruebas2", "12345678b", "pruebas1", "pruebas 1", "128a", ExpectedResult = 503)]
         [TestCase("pruebas2", "12345678b", "pruebas1error", "prubas1", "12345678a", ExpectedResult = 505)]
-        [TestCase("pruebas2", "12345678b", "pruebas44", "pruebas44", "12345678uu", ExpectedResult = 401)]
         [TestCase("pruebas2", "12345678b", "pruebas44", "pruebas44new", "12345678uu", ExpectedResult = 401)]
         public int TestUpdateUser(string user, string pass, string oldUser, string newUser, string newPass)
         {
             Respuesta res = usrSrv.UpdateUser(user, pass, oldUser, newUser, newPass);
+            if(res.Code == 401)
+            {
+                usrSrv.DelteNode("usuarios/" + newUser);
+            }
+            return res.Code;
+        }
+
+
+
+        [TestCase("pruebas1", "12345678a", "pruebas2", JSONType.Valid, ExpectedResult = 504)]
+        [TestCase("pruebas2", "12345678b", "pruebas2", JSONType.Valid, ExpectedResult = 506)]
+        [TestCase("pruebas2", "12345678b", "pruebas1", JSONType.Valid, ExpectedResult = 402)]
+        [TestCase("pruebas2", "12345678b", "pruebas1", JSONType.Invalid, ExpectedResult = 304)]
+        [TestCase("pruebas2", "12345678b", "pruebas1", JSONType.Malformed, ExpectedResult = 305)]
+        public int TestSetUserInfo(string user, string pass, string searchedUser, JSONType type)
+        {
+            Respuesta res = usrSrv.SetUserInfo(user, pass, searchedUser, getTestJSON(type));
+            return res.Code;
+        }
+
+        [TestCase("pruebas1", "12345678a", "pruebas2", JSONType.PartialValid, ExpectedResult = 504)]
+        [TestCase("pruebas2", "12345678b", "pruebas2asdasd", JSONType.PartialValid, ExpectedResult = 507)]
+        [TestCase("pruebas2", "12345678b", "pruebas1", JSONType.PartialValid, ExpectedResult = 403)]
+        [TestCase("pruebas2", "12345678b", "pruebas1", JSONType.PartialInvalid, ExpectedResult = 306)]
+        [TestCase("pruebas2", "12345678b", "pruebas1", JSONType.PartialMalformed, ExpectedResult = 305)]
+        public int TestUpdateUserInfo(string user, string pass, string searchedUser, JSONType type)
+        {
+            Respuesta res = usrSrv.UpdateUserInfo(user, pass, searchedUser, getTestJSON(type));
+            if (res.Code == 403)
+            {
+                usrSrv.DelteNode("usuarios_info/" + searchedUser);
+            }
             return res.Code;
         }
     }

@@ -14,7 +14,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\WebServicesBUAP\WebServicesBUAP.csproj">
-      <Private>False</Private>
+    <Properties>SkipValidatePackageReferences=true</Properties>
+    <Private>False</Private>
     </ProjectReference>
   </ItemGroup>
 
