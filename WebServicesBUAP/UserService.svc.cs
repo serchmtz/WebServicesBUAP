@@ -150,7 +150,7 @@ namespace WebServicesBUAP
 
             FirebaseResponse fireRes = client.Set("usuarios/" + newUser, MD5Hash(newPass));
 
-            if (fireRes != null) res = GetResponse(404);
+            if (fireRes != null) res = GetResponse(401);
 
             return res;
         }
