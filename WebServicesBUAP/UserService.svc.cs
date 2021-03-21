@@ -231,10 +231,11 @@ namespace WebServicesBUAP
 
             if (!UserInfoExists(searchedUser)) return GetResponse(507);
 
-  
-            UserInfo userInfo = JsonConvert.DeserializeObject<UserInfo>(userInfoJSON);
-            Console.WriteLine(userInfoJSON);
-            Console.WriteLine(userInfo);
+            JsonSerializerSettings jsonSettings = new JsonSerializerSettings
+            {
+                NullValueHandling = NullValueHandling.Ignore
+            };
+            object userInfo = JsonConvert.DeserializeObject<object>(userInfoJSON);
             FirebaseResponse fireRes = client.Update("usuarios_info/" + searchedUser, userInfo);
 
             if (fireRes != null) return GetResponse(403);
