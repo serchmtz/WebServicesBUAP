@@ -24,15 +24,7 @@ jobs:
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
-        
-      - name: Setup Test Reporter
-        uses: dorny/test-reporter@v1.3.1
-        if: success() || failure()
-        with:
-          name: NUnit Tests
-          path: TestResults/*.trx
-          reporter: dotnet-trx
-          
+                 
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v1
 
@@ -50,5 +42,13 @@ jobs:
         
       - name: Test WebServicesBUAP
         run: vstest.console --logger:trx --ResultsDirectory:.\TestsResults\ .\TestWebServicesBUAP\bin\Release\net48\TestWebServicesBUAP.dll
+        
+      - name: Setup Test Reporter
+        uses: dorny/test-reporter@v1.3.1
+        if: success() || failure()
+        with:
+          name: NUnit Tests
+          path: TestResults/*.trx
+          reporter: dotnet-trx
         
         
