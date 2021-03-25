@@ -40,8 +40,10 @@ jobs:
       - name: Build WebServicesBUAP
         run: msbuild WebServicesBUAP.sln /p:Configuration=Release
 
-      - name: Test WebServicesBUAP
+      - name: Current directory
         run: pwd
+        
+      - name: Test WebServicesBUAP
         run: vstest.console .\TestWebServicesBUAP\bin\Release\net48\TestWebServicesBUAP.dll
         
         
