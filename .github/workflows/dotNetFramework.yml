@@ -48,7 +48,7 @@ jobs:
         if: success() || failure()
         with:
           name: NUnit Tests
-          path: TestResults/*.trx
+          path: TestsResults/*.trx
           reporter: dotnet-trx
         
         
