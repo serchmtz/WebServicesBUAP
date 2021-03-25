@@ -24,7 +24,15 @@ jobs:
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
-      
+        
+      - name: Setup Test Reporter
+        uses: dorny/test-reporter@v1.3.1
+        if: success() || failure()
+        with:
+          name: NUnit Tests
+          path: TestResults/*.trx
+          reporter: dotnet-trx
+          
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v1
 
@@ -32,18 +40,15 @@ jobs:
         uses: darenm/Setup-VSTest@v1
         
       - name: Setup NuGet
-        uses: NuGet/setup-nuget@v1.0.5
+        uses: NuGet/setup-nuget@v1.0.5      
       
       - name: Restore NuGet packages
         run: nuget restore WebServicesBUAP.sln
         
       - name: Build WebServicesBUAP
         run: msbuild WebServicesBUAP.sln /p:Configuration=Release
-
-      - name: Current directory
-        run: pwd
         
       - name: Test WebServicesBUAP
-        run: vstest.console .\TestWebServicesBUAP\bin\Release\net48\TestWebServicesBUAP.dll
+        run: vstest.console --logger:trx --ResultsDirectory:.\TestsResults\ .\TestWebServicesBUAP\bin\Release\net48\TestWebServicesBUAP.dll
         
         
